@@ -157,12 +157,12 @@ class CronSchedulerTest {
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
             flag.set(true);
             return ret;
-        }, 2, TimeUnit.MILLISECONDS);
+        }, 50, TimeUnit.MILLISECONDS);
         assertEquals(Job.JobStatus.WAITING, job.getStatus());
-        Thread.sleep(1);
+        Thread.sleep(25);
         job.stop();
         assertEquals(Job.JobStatus.STOPPED, job.getStatus());
-        Thread.sleep(2);
+        Thread.sleep(50);
         assertFalse(flag.get());
     }
 
@@ -170,17 +170,17 @@ class CronSchedulerTest {
     void testRunWithID() throws InterruptedException {
         int ret = 15;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
-            Thread.sleep(2);
+            Thread.sleep(50);
             flag.set(true);
             return ret;
-        }, 1, TimeUnit.MILLISECONDS, "id1");
+        }, 50, TimeUnit.MILLISECONDS, "id1");
         assertEquals("id1", job.getId());
         assertEquals(Job.JobStatus.WAITING, job.getStatus());
 
-        Thread.sleep(1);
+        Thread.sleep(75);
         assertEquals(Job.JobStatus.RUNNING, job.getStatus());
         assertFalse(flag.get());
-        Thread.sleep(2);
+        Thread.sleep(50);
         assertTrue(flag.get());
         assertEquals(ret, job.getReturnValues().get(0));
         assertEquals(Job.JobStatus.STOPPED, job.getStatus());
@@ -192,13 +192,12 @@ class CronSchedulerTest {
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
             flag.set(true);
             return ret;
-        }, 1, TimeUnit.MILLISECONDS, "id1");
+        }, 50, TimeUnit.MILLISECONDS, "id1");
         assertThrows(KeyException.class, () ->{
             CronScheduler.runOnce(() -> {
-                Thread.sleep(2);
                 flag.set(true);
                 return ret;
-            }, 1, TimeUnit.MILLISECONDS, "id1");
+            }, 50, TimeUnit.MILLISECONDS, "id1");
         });
         job.stop();
     }
@@ -209,16 +208,15 @@ class CronSchedulerTest {
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
             flag.set(true);
             return ret;
-        }, 1, TimeUnit.MILLISECONDS, "id1");
+        }, 50, TimeUnit.MILLISECONDS, "id1");
         job.stop();
         assertDoesNotThrow(() ->{
             CronScheduler.runOnce(() -> {
-                Thread.sleep(2);
                 flag.set(true);
                 return ret;
-            }, 1, TimeUnit.MILLISECONDS, "id1");
+            }, 50, TimeUnit.MILLISECONDS, "id1");
         });
-        Thread.sleep(2);
+        Thread.sleep(75);
     }
 
     @Test
@@ -267,12 +265,12 @@ class CronSchedulerTest {
     void testExecutionTime() throws InterruptedException {
         int ret = 15;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
-            Thread.sleep(1);
+            Thread.sleep(50);
             flag.set(true);
             return ret;
-        }, 1, TimeUnit.MILLISECONDS);
-        Thread.sleep(3);
-        assertEquals(1,1e-5, job.getExecutionTimes().get(0));
+        }, 50, TimeUnit.MILLISECONDS);
+        Thread.sleep(150);
+        assertEquals(50,1e-5, job.getExecutionTimes().get(0));
     }
 
     @Test
@@ -281,7 +279,7 @@ class CronSchedulerTest {
         AtomicInteger actualRet = new AtomicInteger();
         AtomicReference<Double> executionTime = new AtomicReference<>((double) 0);
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
-            Thread.sleep(1);
+            Thread.sleep(50);
             flag.set(true);
             return ret;
         }, 1, TimeUnit.MILLISECONDS);
@@ -289,9 +287,9 @@ class CronSchedulerTest {
             actualRet.set(result);
             executionTime.set(wait);
         });
-        Thread.sleep(3);
+        Thread.sleep(75);
         assertEquals(ret, actualRet.get());
-        assertEquals(1, 1e-5, executionTime.get());
+        assertEquals(50, 1e-5, executionTime.get());
     }
 
     @Test
