@@ -40,7 +40,7 @@ public class Job<K, V> {
         setup();
     }
 
-    void setup() {
+    private void setup() {
         thread = new Thread(() -> {
             try {
                 while(runs > 0){
@@ -61,7 +61,7 @@ public class Job<K, V> {
         thread.start();
     }
 
-    long calculateWait() {
+    private long calculateWait() {
         if (milliseconds != null) {
             return milliseconds;
         }
