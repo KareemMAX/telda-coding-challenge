@@ -1,7 +1,5 @@
 package com.telda;
 
-import jdk.jshell.spi.ExecutionControl;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -14,7 +12,8 @@ public class Job<K, V> {
     Long milliseconds = null;
     String cron = null;
     Callable<V> func;
-    Thread thread;
+    Thread mainThread;
+    ArrayList<Thread> jobThreads = new ArrayList<>();
     Logger logger = Logger.getLogger(Job.class.getName());
 
     public enum JobStatus {
@@ -41,24 +40,45 @@ public class Job<K, V> {
     }
 
     private void setup() {
-        thread = new Thread(() -> {
+        mainThread = new Thread(() -> {
             try {
-                while(runs > 0){
+                while(runs == null || runs > 0){
                     Thread.sleep(calculateWait());
-                    runs--;
-                    status = JobStatus.RUNNING;
-                    V ret = func.call();
-                    returnValues.add(ret);
-                    status = JobStatus.WAITING;
+                    if (runs != null)
+                        runs--;
+                    Thread job = getNewJobThread();
+                    jobThreads.add(job);
                 }
-                status = JobStatus.STOPPED;
+                status = calculateStatus();
             } catch (InterruptedException e) {
-                logger.warning("Cron job interrupted");
+                logger.info("Cron job interrupted");
+            }
+        });
+        mainThread.start();
+    }
+
+    private Thread getNewJobThread() {
+        Thread job = new Thread(() -> {
+            status = calculateStatus();
+            logger.info("Started Cron job");
+            try {
+                V ret = func.call();
+                returnValues.add(ret);
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error occurred while execution", e);
             }
+            logger.info("Finished Cron job");
         });
-        thread.start();
+        job.start();
+        new Thread(() -> {
+            try {
+                job.join();
+            } catch (InterruptedException e) {
+                logger.log(Level.SEVERE, "Waiter thread got interrupted");
+            }
+            status = calculateStatus();
+        }).start();
+        return job;
     }
 
     private long calculateWait() {
@@ -71,24 +91,43 @@ public class Job<K, V> {
         throw new IllegalArgumentException("No delay nor Cron expression was provided");
     }
 
+    private JobStatus calculateStatus() {
+        jobThreads.removeIf((thread) ->
+                !thread.isAlive()
+        );
+
+        if (status == JobStatus.PAUSED) {
+            return JobStatus.PAUSED;
+        }
+
+        if (jobThreads.isEmpty() && runs != null && runs == 0) {
+            return JobStatus.STOPPED;
+        }
+
+        return jobThreads.isEmpty() ? JobStatus.WAITING : JobStatus.RUNNING;
+    }
+
     public K getId() {
         return id;
     }
 
-    public void pause() throws ExecutionControl.NotImplementedException {
-        throw new ExecutionControl.NotImplementedException("TODO");
+    public void pause() {
+        mainThread.interrupt();
+        status = JobStatus.PAUSED;
     }
 
-    public void resume(boolean resetTimer) throws ExecutionControl.NotImplementedException {
-        throw new ExecutionControl.NotImplementedException("TODO");
+    public void resume(boolean resetTimer) {
+
     }
 
-    public void resume() throws ExecutionControl.NotImplementedException {
+    public void resume() {
         resume(false);
     }
 
-    public void stop() throws ExecutionControl.NotImplementedException {
-        throw new ExecutionControl.NotImplementedException("TODO");
+    public void stop() {
+        mainThread.interrupt();
+        runs = 0;
+        status = calculateStatus();
     }
 
     public List<V> getReturnValues() {
@@ -103,7 +142,7 @@ public class Job<K, V> {
         return status;
     }
 
-    public void addOnFinishCallback(IJobRunCallback<V> callback) throws ExecutionControl.NotImplementedException {
-        throw new ExecutionControl.NotImplementedException("TODO");
+    public void addOnFinishCallback(IJobRunCallback<V> callback) {
+
     }
 }
