@@ -189,18 +189,16 @@ class CronSchedulerTest {
     }
 
     @Test
-    void testUniqueID() throws InterruptedException {
+    void testUniqueID() {
         int ret = 15;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
             flag.set(true);
             return ret;
         }, 50, TimeUnit.MILLISECONDS, "id1");
-        assertThrows(KeyException.class, () ->{
-            CronScheduler.runOnce(() -> {
-                flag.set(true);
-                return ret;
-            }, 50, TimeUnit.MILLISECONDS, "id1");
-        });
+        assertThrows(KeyException.class, () -> CronScheduler.runOnce(() -> {
+            flag.set(true);
+            return ret;
+        }, 50, TimeUnit.MILLISECONDS, "id1"));
         job.stop();
     }
 
@@ -222,7 +220,7 @@ class CronSchedulerTest {
     }
 
     @Test
-    void testRetrieveWithID() throws InterruptedException {
+    void testRetrieveWithID() {
         int ret = 15;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
             flag.set(true);
@@ -237,7 +235,7 @@ class CronSchedulerTest {
     }
 
     @Test
-    void testRetrieveWithGeneratedID() throws InterruptedException {
+    void testRetrieveWithGeneratedID() {
         int ret = 15;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
             flag.set(true);
@@ -280,29 +278,34 @@ class CronSchedulerTest {
         int ret = 15;
         AtomicInteger actualRet = new AtomicInteger();
         AtomicReference<Double> executionTime = new AtomicReference<>((double) 0);
-        Job<String, Integer> job = CronScheduler.runOnce(() -> {
+        Job<String, Integer> job = CronScheduler.run(() -> {
             Thread.sleep(50);
             flag.set(true);
             return ret;
-        }, 1, TimeUnit.MILLISECONDS);
-        job.addOnFinishCallback((Integer result, double wait) -> {
+        }, 100, TimeUnit.MILLISECONDS, 2);
+        IJobRunCallback<Integer> callback = (Integer result, double wait) -> {
             actualRet.set(result);
             executionTime.set(wait);
-        });
-        Thread.sleep(75);
+        };
+        job.addOnFinishCallback(callback);
+        Thread.sleep(190);
         assertEquals(ret, actualRet.get());
         assertEquals(50, 1e-5, executionTime.get());
+        actualRet.set(0);
+        executionTime.set(0.0);
+        job.deleteOnFinishCallback(callback);
+        Thread.sleep(100);
+        assertNotEquals(ret, actualRet.get());
+        assertNotEquals(50, executionTime.get(), 1e-5);
     }
 
     @Test
     void testNegativeRuns() {
         int ret = 20;
-        assertThrows(IllegalArgumentException.class, () -> {
-            Job<String, Integer> job = CronScheduler.run(() -> {
-                Thread.sleep(1);
-                flag.set(true);
-                return ret;
-            }, 1, TimeUnit.MILLISECONDS, -1);
-        });
+        assertThrows(IllegalArgumentException.class, () -> CronScheduler.run(() -> {
+            Thread.sleep(1);
+            flag.set(true);
+            return ret;
+        }, 1, TimeUnit.MILLISECONDS, -1));
     }
 }
