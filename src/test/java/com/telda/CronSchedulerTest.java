@@ -107,23 +107,23 @@ class CronSchedulerTest {
     void testPauseAndResume() throws InterruptedException {
         int ret = 102;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
-            Thread.sleep(2);
+            Thread.sleep(50);
             flag.set(true);
             return ret;
-        }, 2, TimeUnit.MILLISECONDS);
+        }, 50, TimeUnit.MILLISECONDS);
         assertEquals(Job.JobStatus.WAITING, job.getStatus());
-        Thread.sleep(1);
-        // Will execute after 1ms
+        Thread.sleep(25);
+        // Will execute after 25ms
         job.pause();
         assertEquals(Job.JobStatus.PAUSED, job.getStatus());
-        Thread.sleep(1);
+        Thread.sleep(25);
         // Clock didn't change
         job.resume();
         assertEquals(Job.JobStatus.WAITING, job.getStatus());
-        Thread.sleep(2);
-        // Should have been executing for 1ms
+        Thread.sleep(50);
+        // Should have been executing for 25ms
         assertEquals(Job.JobStatus.RUNNING, job.getStatus());
-        Thread.sleep(1);
+        Thread.sleep(75);
         assertEquals(Job.JobStatus.STOPPED, job.getStatus());
     }
 
@@ -131,23 +131,25 @@ class CronSchedulerTest {
     void testPauseAndResumeReset() throws InterruptedException {
         int ret = 102;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
-            Thread.sleep(2);
+            Thread.sleep(50);
             flag.set(true);
             return ret;
-        }, 2, TimeUnit.MILLISECONDS);
+        }, 50, TimeUnit.MILLISECONDS);
         assertEquals(Job.JobStatus.WAITING, job.getStatus());
-        Thread.sleep(1);
-        // Will execute after 1ms
+        Thread.sleep(25);
+        // Will execute after 25ms
         job.pause();
         assertEquals(Job.JobStatus.PAUSED, job.getStatus());
-        Thread.sleep(1);
+        Thread.sleep(25);
         // Clock didn't change
         job.resume(true);
         assertEquals(Job.JobStatus.WAITING, job.getStatus());
-        Thread.sleep(3);
-        // Should have been executing for 1ms
+        Thread.sleep(25);
+        assertEquals(Job.JobStatus.WAITING, job.getStatus());
+        // Should execute after 25ms
+        Thread.sleep(50);
         assertEquals(Job.JobStatus.RUNNING, job.getStatus());
-        Thread.sleep(1);
+        Thread.sleep(75);
         assertEquals(Job.JobStatus.STOPPED, job.getStatus());
     }
 

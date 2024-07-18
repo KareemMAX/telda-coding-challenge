@@ -15,6 +15,8 @@ public class Job<K, V> {
     Thread mainThread;
     ArrayList<Thread> jobThreads = new ArrayList<>();
     Logger logger = Logger.getLogger(Job.class.getName());
+    Long lastStart = null;
+    Long elapsedMillis = null;
 
     public enum JobStatus {
         PAUSED, RUNNING, WAITING, STOPPED
@@ -55,6 +57,7 @@ public class Job<K, V> {
         mainThread = new Thread(() -> {
             try {
                 while(runs == null || runs > 0){
+                    lastStart = System.currentTimeMillis();
                     Thread.sleep(calculateWait());
                     if (runs != null)
                         runs--;
@@ -102,6 +105,11 @@ public class Job<K, V> {
 
     private long calculateWait() {
         if (milliseconds != null) {
+            if (elapsedMillis != null) {
+                long remainingTime = milliseconds - elapsedMillis;
+                elapsedMillis = null;
+                return remainingTime;
+            }
             return milliseconds;
         }
         if (cron != null) {
@@ -133,10 +141,15 @@ public class Job<K, V> {
     public void pause() {
         mainThread.interrupt();
         status = JobStatus.PAUSED;
+        elapsedMillis = System.currentTimeMillis() - lastStart;
     }
 
     public void resume(boolean resetTimer) {
-
+        if (resetTimer) {
+            elapsedMillis = null;
+        }
+        status = JobStatus.WAITING;
+        setup();
     }
 
     public void resume() {
