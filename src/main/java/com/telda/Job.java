@@ -7,14 +7,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Job<K, V> {
-    K id;
+    final K id;
     Integer runs;
     Long milliseconds = null;
     String cron = null;
-    Callable<V> func;
+    final Callable<V> func;
     Thread mainThread;
-    ArrayList<Thread> jobThreads = new ArrayList<>();
-    Logger logger = Logger.getLogger(Job.class.getName());
+    final ArrayList<Thread> jobThreads = new ArrayList<>();
+    final Logger logger = Logger.getLogger(Job.class.getName());
     Long lastStart = null;
     Long elapsedMillis = null;
 
@@ -22,9 +22,9 @@ public class Job<K, V> {
         PAUSED, RUNNING, WAITING, STOPPED
     }
     JobStatus status = JobStatus.WAITING;
-    ArrayList<V> returnValues = new ArrayList<>();
-    ArrayList<Double> executionTimes = new ArrayList<>();
-    ArrayList<IJobRunCallback<V>> callbacks = new ArrayList<>();
+    final ArrayList<V> returnValues = new ArrayList<>();
+    final ArrayList<Double> executionTimes = new ArrayList<>();
+    final ArrayList<IJobRunCallback<V>> callbacks = new ArrayList<>();
 
     protected Job(K id, Integer runs, long milliseconds, Callable<V> func) {
         validate(runs, milliseconds);
@@ -53,6 +53,7 @@ public class Job<K, V> {
         }
     }
 
+    @SuppressWarnings("BusyWait")
     private void setup() {
         mainThread = new Thread(() -> {
             try {
@@ -128,6 +129,7 @@ public class Job<K, V> {
         }
 
         if (jobThreads.isEmpty() && runs != null && runs == 0) {
+            CronScheduler.store.remove(getId());
             return JobStatus.STOPPED;
         }
 
