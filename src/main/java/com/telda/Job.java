@@ -9,8 +9,7 @@ import java.util.logging.Logger;
 public class Job<K, V> {
     final K id;
     Integer runs;
-    Long milliseconds = null;
-    String cron = null;
+    Long milliseconds;
     final Callable<V> func;
     Thread mainThread;
     final ArrayList<Thread> jobThreads = new ArrayList<>();
@@ -31,15 +30,6 @@ public class Job<K, V> {
         this.id = id;
         this.runs = runs;
         this.milliseconds = milliseconds;
-        this.func = func;
-        setup();
-    }
-
-    protected Job(K id, Integer runs, String cron, Callable<V> func) {
-        validate(runs, null);
-        this.id = id;
-        this.runs = runs;
-        this.cron = cron;
         this.func = func;
         setup();
     }
@@ -105,18 +95,12 @@ public class Job<K, V> {
     }
 
     private long calculateWait() {
-        if (milliseconds != null) {
-            if (elapsedMillis != null) {
-                long remainingTime = milliseconds - elapsedMillis;
-                elapsedMillis = null;
-                return remainingTime;
-            }
-            return milliseconds;
+        if (elapsedMillis != null) {
+            long remainingTime = milliseconds - elapsedMillis;
+            elapsedMillis = null;
+            return remainingTime;
         }
-        if (cron != null) {
-            // TODO: calculate next cron
-        }
-        throw new IllegalArgumentException("No delay nor Cron expression was provided");
+        return milliseconds;
     }
 
     private JobStatus calculateStatus() {

@@ -36,24 +36,6 @@ public class CronScheduler {
         return run(job, delay, unit, maxRuns, uuid);
     }
 
-    public static <K, V> Job<K, V> run(Callable<V> job, String cron, K id) {
-        return saveAndReturn(new Job<>(id, null, cron, job));
-    }
-
-    public static <K, V> Job<K, V> run(Callable<V> job, String cron, int maxRuns, K id) {
-        return saveAndReturn(new Job<>(id, maxRuns, cron, job));
-    }
-
-    public static <V> Job<String, V> run(Callable<V> job, String cron) {
-        String uuid = UUID.randomUUID().toString();
-        return run(job, cron, uuid);
-    }
-
-    public static <V> Job<String, V> run(Callable<V> job, String cron, int maxRuns) {
-        String uuid = UUID.randomUUID().toString();
-        return run(job, cron, maxRuns, uuid);
-    }
-
     @SuppressWarnings("unchecked")
     public static <K, V> Job<K, V> getJob(K id) {
         return store.get(id);

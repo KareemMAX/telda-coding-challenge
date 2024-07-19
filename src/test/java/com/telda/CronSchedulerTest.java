@@ -86,23 +86,6 @@ class CronSchedulerTest {
     }
 
     @Test
-    @Disabled
-    void testCronRun() throws InterruptedException {
-        int ret = 230;
-        Job<String, Integer> job = CronScheduler.run(() -> {
-            flag.set(true);
-            return ret;
-        }, "*/1 * * * *"); // Run every minute
-        assertEquals(Job.JobStatus.WAITING, job.getStatus());
-        flag.set(false);
-        Thread.sleep(60000);
-        assertTrue(flag.get());
-        assertEquals(ret, job.getReturnValues().get(0));
-        job.stop();
-        assertEquals(Job.JobStatus.STOPPED, job.getStatus());
-    }
-
-    @Test
     void testPauseAndResume() throws InterruptedException {
         int ret = 102;
         Job<String, Integer> job = CronScheduler.runOnce(() -> {
